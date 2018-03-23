@@ -1,20 +1,15 @@
 require "mnist"
+require 'matrix'
 
 class Node
   def initialize(input_size, output_size)
-    @weight_size = input_size * output_size
-    @weight      = Array.new(@weight_size, 0)
-		init_weight
+    @weight = Matrix.build(output_size, input_size) do |row, col|
+			Random.rand(1.0)
+		end
 
     @input_size  = input_size
     @output_size = output_size
   end
-
-	def init_weight
-		@weight_size.times do |index|
-			@weight[index] = Random.rand(1.0)
-		end
-	end
 
   def calc(input)
     if input.size != @input_size
@@ -23,36 +18,25 @@ class Node
       raise ArgumentException
     end
 
-    output = Array.new(@output_size, 0)
-    @output_size.times do |output_index|
-      @input_size.times do |input_index|
-        weight_index = output_index * @input_size + input_index
-        if weight_index >= @weight_size
-          p weight_index
-          p @weight_size
-          raise Exception
-        end
-        weight = @weight[weight_index]
+		input_vector = Vector.elements(input, false)
 
-        output[output_index] += weight * input[input_index]
-      end
-    end
-
-    return output
+    return (@weight * input_vector).to_a
   end
 
 	def get_weight_size
-		return @weight_size
+		return @input_size * @output_size
 	end
 
 	def get_weight(index)
-		raise ArgumentException if index >= @weight_size
-		return @weight[index]
+		row = (index / @input_size).to_i
+		col = index - (index / @input_size).to_i
+		return @weight[row, col]
 	end
 
 	def set_weight(index, val)
-		raise ArgumentException if index >= @weight_size
-		@weight[index] = val
+		row = (index / @input_size).to_i
+		col = index - (index / @input_size).to_i
+#		@weight.instance_variable_get(:@rows)[row, col] = val
 	end
 end
 
