@@ -62,10 +62,23 @@ int MaxIndex(Eigen::VectorXf vec)
 
 int main()
 {
+	std::vector<std::shared_ptr<Image> > train_image_list;
+	std::vector<uint8_t>                 train_label_list;
 	std::vector<std::shared_ptr<Image> > test_image_list;
 	std::vector<uint8_t>                 test_label_list;
 
+	printf("[INFO] load image...\n");
 	std::shared_ptr<MnistLoader> loader = std::make_shared<MnistLoader>();
+	if(loader->LoadImage("../train-images-idx3-ubyte", train_image_list) == false)
+	{
+		printf("[ERROR] load data error.\n");
+	}
+
+	if(loader->LoadLabel("../train-labels-idx1-ubyte", train_label_list) == false)
+	{
+		printf("[ERROR] load data error.\n");
+	}
+
 	if(loader->LoadImage("../t10k-images-idx3-ubyte", test_image_list) == false)
 	{
 		printf("[ERROR] load data error.\n");
@@ -79,6 +92,9 @@ int main()
 	Node node1(INPUT_SIZE, HIDDEN_SIZE);
 	Node node2(HIDDEN_SIZE, OUTPUT_SIZE);
 
+	printf("[INFO] training...\n");
+
+	printf("[INFO] test...\n");
 	std::vector<uint8_t> result_list;
 	for(int image_index = 0 ; image_index < test_image_list.size() ; image_index++)
 	{
