@@ -2,6 +2,7 @@
 #include "node.h"
 
 #include <iostream>
+#include <memory>
 #include <Eigen/Core>
 
 #define EIGEN_MPL2_ONLY
@@ -9,6 +10,74 @@
 #define INPUT_SIZE  784
 #define HIDDEN_SIZE 50
 #define OUTPUT_SIZE 10
+
+namespace {
+	Eigen::VectorXf ReLu(Eigen::VectorXf &val)
+	{
+		Eigen::VectorXf ret(val.rows());
+
+		for(int i = 0 ; i < val.rows() ; i++)
+		{
+			ret[i] = fmax(0, val[i]);
+		}
+
+		return ret;
+	}
+
+	Eigen::VectorXf Softmax(Eigen::VectorXf &val)
+	{
+		Eigen::VectorXf ret(val.rows());
+
+		double sum = 0;
+		for(int i = 0 ; i < val.rows() ; i++)
+		{
+			sum = exp(val[i]);
+		}
+
+		for(int i = 0 ; i < val.rows() ; i++)
+		{
+			ret[i] = exp(val[i]) / sum;
+		}
+
+		return ret;
+	}
+
+	Eigen::VectorXf MakeOnehotVector(int size, int index)
+	{
+		Eigen::VectorXf ret = Eigen::VectorXf::Zero(size);
+		ret[index] = 1;
+		return ret;
+	}
+
+	float SquareError(Eigen::VectorXf vec1, Eigen::VectorXf vec2)
+	{
+		assert(vec1.rows() == vec2.rows());
+		assert(vec1.cols() == vec2.cols());
+		assert(vec1.cols() == 1);
+
+		float error = 0;
+		for(int i = 0 ; i < vec1.rows() ; i++)
+		{
+			float v = vec1[i] - vec2[i];
+			error += v * v;
+		}
+
+		return error;
+	}
+
+	int MaxIndex(Eigen::VectorXf vec)
+	{
+		int max_index = 0;
+		for(int i = 0 ; i < vec.rows() ; i++)
+		{
+			if(vec[max_index] < vec[i])
+			{
+				max_index = i;
+			}
+		}
+		return max_index;
+	}
+};
 
 Eigen::VectorXf Arrayi2VectorXf(uint8_t *array, int size)
 {
@@ -25,39 +94,14 @@ Eigen::VectorXf Arrayi2VectorXf(uint8_t *array, int size)
 
 Eigen::VectorXf Predict(Node &node1, Node &node2, Eigen::VectorXf input)
 {
-		Eigen::VectorXf temp   = node1.Calc(input);
-		Eigen::VectorXf output = node2.Calc(temp);
+	Eigen::VectorXf temp;
 
-		return output;
-}
+	temp = node1.Calc(input);
+	temp = ReLu(temp);
+	temp = node2.Calc(temp);
+	temp = Softmax(temp);
 
-float SquareError(Eigen::VectorXf vec1, Eigen::VectorXf vec2)
-{
-	assert(vec1.rows() == vec2.rows());
-	assert(vec1.cols() == vec2.cols());
-	assert(vec1.cols() == 1);
-
-	float error = 0;
-	for(int i = 0 ; i < vec1.rows() ; i++)
-	{
-		float v = vec1[i] - vec2[i];
-		error += v * v;
-	}
-
-	return error;
-}
-
-int MaxIndex(Eigen::VectorXf vec)
-{
-	int max_index = 0;
-	for(int i = 0 ; i < vec.rows() ; i++)
-	{
-		if(vec[max_index] < vec[i])
-		{
-			max_index = i;
-		}
-	}
-	return max_index;
+	return temp;
 }
 
 int main()
@@ -93,6 +137,22 @@ int main()
 	Node node2(HIDDEN_SIZE, OUTPUT_SIZE);
 
 	printf("[INFO] training...\n");
+	for(int image_index = 0 ; image_index < train_image_list.size() ; image_index++)
+	{
+		if(image_index % 100 == 0)
+		{
+			printf("[INFO] exec %d/%d\n", image_index, train_label_list.size());
+		}
+		std::shared_ptr<Image> image = train_image_list[image_index];
+		Eigen::VectorXf        input = Arrayi2VectorXf(image->image, image->image_size);
+		int                    ans   = train_label_list[image_index];
+
+		input.normalize();
+		Eigen::VectorXf output = Predict(node1, node2, input);
+		double error = 
+
+		int result = MaxIndex(output);
+	}
 
 	printf("[INFO] test...\n");
 	std::vector<uint8_t> result_list;
