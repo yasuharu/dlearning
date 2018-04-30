@@ -11,6 +11,8 @@
 #define HIDDEN_SIZE 50
 #define OUTPUT_SIZE 10
 
+#define VAR_DIFF (double)(1.0E-6)
+
 namespace {
 	Eigen::VectorXf ReLu(Eigen::VectorXf &val)
 	{
@@ -104,12 +106,23 @@ Eigen::VectorXf Predict(Node &node1, Node &node2, Eigen::VectorXf input)
 	return temp;
 }
 
+double CalcError(Node &node1, Node &node2, Eigen::VectorXf input, Eigen::VectorXf ans)
+{
+	Eigen::VectorXf output     = Predict(node1, node2, input);
+	double          error_rate = SquareError(output, ans);
+
+	return error_rate;
+}
+
 int main()
 {
 	std::vector<std::shared_ptr<Image> > train_image_list;
 	std::vector<uint8_t>                 train_label_list;
 	std::vector<std::shared_ptr<Image> > test_image_list;
 	std::vector<uint8_t>                 test_label_list;
+
+	Eigen::initParallel();
+	Eigen::setNbThreads(4);
 
 	printf("[INFO] load image...\n");
 	std::shared_ptr<MnistLoader> loader = std::make_shared<MnistLoader>();
@@ -134,25 +147,63 @@ int main()
 	}
 
 	Node node1(INPUT_SIZE, HIDDEN_SIZE);
+	if(node1.Load("weight_node1") == false)
+	{
+		printf("[INFO] node1 weight value initialize with random value.\n");
+	}
 	Node node2(HIDDEN_SIZE, OUTPUT_SIZE);
+	if(node2.Load("weight_node2") == false)
+	{
+		printf("[INFO] node2 weight value initialize with random value.\n");
+	}
 
 	printf("[INFO] training...\n");
 	for(int image_index = 0 ; image_index < train_image_list.size() ; image_index++)
 	{
 		if(image_index % 100 == 0)
 		{
-			printf("[INFO] exec %d/%d\n", image_index, train_label_list.size());
+			printf("[INFO] exec %d/%d\n", image_index, (int)train_label_list.size());
 		}
 		std::shared_ptr<Image> image = train_image_list[image_index];
 		Eigen::VectorXf        input = Arrayi2VectorXf(image->image, image->image_size);
 		int                    ans   = train_label_list[image_index];
+		Eigen::VectorXf        ans_vec = MakeOnehotVector(OUTPUT_SIZE, ans);
 
 		input.normalize();
-		Eigen::VectorXf output = Predict(node1, node2, input);
-		double error = 
 
-		int result = MaxIndex(output);
+		double *node1_mod = new double[node1.GetMaxWeightIndex()];
+		double *node2_mod = new double[node2.GetMaxWeightIndex()];
+
+		for(int i = 0 ; i < node1.GetMaxWeightIndex() ; i++)
+		{
+			node1.PushWeightDiff(i, VAR_DIFF);
+			node1_mod[i] = CalcError(node1, node2, input, ans_vec);
+			node1.PopWeightDiff();
+		}
+
+		for(int i = 0 ; i < node2.GetMaxWeightIndex() ; i++)
+		{
+			node2.PushWeightDiff(i, VAR_DIFF);
+			node2_mod[i] = CalcError(node1, node2, input, ans_vec);
+			node2.PopWeightDiff();
+		}
+
+		for(int i = 0 ; i < node1.GetMaxWeightIndex() ; i++)
+		{
+			node1.AddWeight(i, node1_mod[i]);
+		}
+
+		for(int i = 0 ; i < node2.GetMaxWeightIndex() ; i++)
+		{
+			node2.AddWeight(i, node2_mod[i]);
+		}
+
+		delete[] node1_mod;
+		delete[] node2_mod;
 	}
+
+	node1.Save("weight_node1");
+	node2.Save("weight_node2");
 
 	printf("[INFO] test...\n");
 	std::vector<uint8_t> result_list;

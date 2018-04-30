@@ -5,18 +5,34 @@ class Node
 {
 	public:
 		Node(int input_size, int output_size)
-			: input_size_(input_size), output_size_(output_size)
+			: input_size_(input_size), output_size_(output_size),
+			  weight_diff_index(-1)
 		{
 			Initialize();
 		}
 
 		Eigen::MatrixXf Calc(Eigen::VectorXf input);
 
+		int  GetMaxWeightIndex();
+		void PushWeightDiff(int index, double diff);
+		void PopWeightDiff();
+		void AddWeight(int index, double var);
+
+		bool Load(const char* file_name);
+		bool Save(const char* file_name);
+
 	private:
 		void Initialize();
 
-		const int input_size_;
-		const int output_size_;
+		int input_size_;
+		int output_size_;
 
 		Eigen::MatrixXf weight_;
+		Eigen::VectorXf offset_;
+
+		int    weight_diff_index;
+		double weight_diff_temp;
+
+		double GetWeight(int index);
+		void   SetWeight(int index, double value);
 };
