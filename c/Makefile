@@ -1,4 +1,12 @@
 
+ifeq ($(shell uname),Linux)
+CFLAGS=-std=c++11 -O3
+endif
+
+ifeq ($(shell uname),Darwin)
+CFLAGS=--std=c++0x -stdlib=libc++
+endif
+
 default:
-	g++ --std=c++0x -stdlib=libc++ -I./eigen node.cpp main.cpp mnist_loader.cpp
+	g++ $(CFLAGS) -I./eigen node.cpp main.cpp mnist_loader.cpp
 
