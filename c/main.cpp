@@ -176,16 +176,34 @@ int main()
 
 		for(int i = 0 ; i < node1.GetMaxWeightIndex() ; i++)
 		{
+			double dyp = 0;
+			double dyn = 0;
+
 			node1.PushWeightDiff(i, VAR_DIFF);
-			node1_mod[i] = CalcError(node1, node2, input, ans_vec);
+			dyp = CalcError(node1, node2, input, ans_vec);
 			node1.PopWeightDiff();
+
+			node1.PushWeightDiff(i, -VAR_DIFF);
+			dyn = CalcError(node1, node2, input, ans_vec);
+			node1.PopWeightDiff();
+
+			node1_mod[i] = (dyp + dyn) / (2 * VAR_DIFF);
 		}
 
 		for(int i = 0 ; i < node2.GetMaxWeightIndex() ; i++)
 		{
+			double dyp = 0;
+			double dyn = 0;
+
 			node2.PushWeightDiff(i, VAR_DIFF);
-			node2_mod[i] = CalcError(node1, node2, input, ans_vec);
+			dyp = CalcError(node1, node2, input, ans_vec);
 			node2.PopWeightDiff();
+
+			node2.PushWeightDiff(i, -VAR_DIFF);
+			dyn = CalcError(node1, node2, input, ans_vec);
+			node2.PopWeightDiff();
+
+			node2_mod[i] = (dyp + dyn) / (2 * VAR_DIFF);
 		}
 
 		for(int i = 0 ; i < node1.GetMaxWeightIndex() ; i++)
