@@ -218,6 +218,12 @@ int main()
 
 		delete[] node1_mod;
 		delete[] node2_mod;
+
+		if(image_index == 10)
+		{
+			// optimization test
+			return 1;
+		}
 	}
 
 	node1.Save("weight_node1");
