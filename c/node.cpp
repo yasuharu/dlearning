@@ -17,11 +17,6 @@ Eigen::MatrixXf Node::Calc(Eigen::VectorXf input)
 	return weight_ * input + offset_;
 }
 
-int Node::GetMaxWeightIndex()
-{
-	return input_size_ * output_size_ + output_size_;
-}
-
 void Node::PushWeightDiff(int index, double diff)
 {
 	assert(weight_diff_index == -1);
@@ -51,15 +46,15 @@ void Node::AddWeight(int index, double var)
 
 double Node::GetWeight(int index)
 {
-	if(index < input_size_ * output_size_)
+	if(index < inxout_size_)
 	{
 		int row_index = index / input_size_;
-		int col_index = index % input_size_;
+		int col_index = index - (row_index * input_size_);
 
 		return weight_(row_index, col_index);
 	}else
 	{
-		int row_index = index - (input_size_ * output_size_);
+		int row_index = index - (inxout_size_);
 
 		return offset_[row_index];
 	}
@@ -67,15 +62,15 @@ double Node::GetWeight(int index)
 
 void Node::SetWeight(int index, double value)
 {
-	if(index < input_size_ * output_size_)
+	if(index < inxout_size_)
 	{
 		int row_index = index / input_size_;
-		int col_index = index % input_size_;
+		int col_index = index - (row_index * input_size_);
 
 		weight_(row_index, col_index) = value;
 	}else
 	{
-		int row_index = index - (input_size_ * output_size_);
+		int row_index = index - (inxout_size_);
 
 		offset_[row_index] = value;
 	}
@@ -100,6 +95,8 @@ bool Node::Load(const char *file_name)
 
 	input_size_  = input_size;
 	output_size_ = output_size;
+	inxout_size_ = input_size * output_size;
+	weight_size_ = input_size * output_size + output_size;
 
 	for(int i = 0 ; i < GetMaxWeightIndex() ; i++)
 	{

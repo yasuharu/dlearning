@@ -4,7 +4,7 @@ CFLAGS=-std=c++11 -O3
 endif
 
 ifeq ($(shell uname),Darwin)
-CFLAGS=--std=c++0x -stdlib=libc++ -O3 -DNDEBUG
+CFLAGS=--std=c++0x -stdlib=libc++ -O3 -DNDEBUG -march=native
 endif
 
 default:
