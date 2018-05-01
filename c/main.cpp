@@ -31,15 +31,20 @@ namespace {
 		Eigen::VectorXf ret(val.rows());
 
 		double sum = 0;
+		double *exp_array = new double[val.rows()];
+
 		for(int i = 0 ; i < val.rows() ; i++)
 		{
-			sum = exp(val[i]);
+			exp_array[i] = exp(val[i]);
+			sum = exp_array[i];
 		}
 
 		for(int i = 0 ; i < val.rows() ; i++)
 		{
-			ret[i] = exp(val[i]) / sum;
+			ret[i] = exp_array[i] / sum;
 		}
+
+		delete[] exp_array;
 
 		return ret;
 	}
@@ -81,7 +86,7 @@ namespace {
 	}
 };
 
-Eigen::VectorXf Arrayi2VectorXf(uint8_t *array, int size)
+Eigen::VectorXf Array2VectorXf(uint8_t *array, int size)
 {
 	Eigen::VectorXf ret(size);
 
@@ -165,7 +170,7 @@ int main()
 			printf("[INFO] exec %d/%d\n", image_index, (int)train_label_list.size());
 		}
 		std::shared_ptr<Image> image = train_image_list[image_index];
-		Eigen::VectorXf        input = Arrayi2VectorXf(image->image, image->image_size);
+		Eigen::VectorXf        input = Array2VectorXf(image->image, image->image_size);
 		int                    ans   = train_label_list[image_index];
 		Eigen::VectorXf        ans_vec = MakeOnehotVector(OUTPUT_SIZE, ans);
 
@@ -219,11 +224,11 @@ int main()
 		delete[] node1_mod;
 		delete[] node2_mod;
 
-		if(image_index == 10)
-		{
-			// optimization test
-			return 1;
-		}
+//		if(image_index == 10)
+//		{
+//			// optimization test
+//			return 1;
+//		}
 	}
 
 	node1.Save("weight_node1");
@@ -234,7 +239,7 @@ int main()
 	for(int image_index = 0 ; image_index < test_image_list.size() ; image_index++)
 	{
 		std::shared_ptr<Image> image = test_image_list[image_index];
-		Eigen::VectorXf        input = Arrayi2VectorXf(image->image, image->image_size);
+		Eigen::VectorXf        input = Array2VectorXf(image->image, image->image_size);
 
 		input.normalize();
 		Eigen::VectorXf output = Predict(node1, node2, input);
