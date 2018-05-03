@@ -11,7 +11,8 @@
 #define HIDDEN_SIZE 50
 #define OUTPUT_SIZE 10
 
-#define VAR_DIFF (double)(1.0E-6)
+const double VAR_DIFF  = 1.0e-4;
+const double MOD_RATIO = 1.0e-2;
 
 namespace {
 	Eigen::VectorXf ReLu(Eigen::VectorXf &val)
@@ -36,9 +37,10 @@ namespace {
 		for(int i = 0 ; i < val.rows() ; i++)
 		{
 			exp_array[i] = exp(val[i]);
-			sum = exp_array[i];
+			sum += exp_array[i];
 		}
 
+		// printf("softmax sum = %f\n", sum);
 		for(int i = 0 ; i < val.rows() ; i++)
 		{
 			ret[i] = exp_array[i] / sum;
@@ -163,16 +165,23 @@ int main()
 	}
 
 	printf("[INFO] training...\n");
-	for(int image_index = 0 ; image_index < train_image_list.size() ; image_index++)
+	sranddev();
+	// for(int image_index = 0 ; image_index < train_image_list.size() ; image_index++)
+	// for(int image_index = 0 ; image_index < 100 ; image_index++)
+	for(int train_count = 0 ; train_count < 100 ; train_count++)
 	{
-		if(image_index % 100 == 0)
-		{
-			printf("[INFO] exec %d/%d\n", image_index, (int)train_label_list.size());
-		}
+		int image_index = rand() % train_image_list.size();
+
+//		if(image_index % 100 == 0)
+//		{
+//			printf("[INFO] exec %d/%d\n", image_index, (int)train_label_list.size());
+//		}
+
 		std::shared_ptr<Image> image = train_image_list[image_index];
 		Eigen::VectorXf        input = Array2VectorXf(image->image, image->image_size);
 		int                    ans   = train_label_list[image_index];
 		Eigen::VectorXf        ans_vec = MakeOnehotVector(OUTPUT_SIZE, ans);
+//		printf("image_index = %d, ans = %d\n", image_index, ans);
 
 		input.normalize();
 
@@ -192,7 +201,9 @@ int main()
 			dyn = CalcError(node1, node2, input, ans_vec);
 			node1.PopWeightDiff();
 
-			node1_mod[i] = (dyp + dyn) / (2 * VAR_DIFF);
+			node1_mod[i] = (dyp - dyn) / (2.0 * VAR_DIFF);
+
+//			printf("dyp=%f, dyn=%f, mod=%f\n", dyp, dyn, node1_mod[i]);
 		}
 
 		for(int i = 0 ; i < node2.GetMaxWeightIndex() ; i++)
@@ -208,21 +219,25 @@ int main()
 			dyn = CalcError(node1, node2, input, ans_vec);
 			node2.PopWeightDiff();
 
-			node2_mod[i] = (dyp + dyn) / (2 * VAR_DIFF);
+			node2_mod[i] = (dyp - dyn) / (2.0 * VAR_DIFF);
+
+//			printf("dyp=%lf, dyn=%lf, mod=%lf\n", dyp, dyn, node2_mod[i]);
 		}
 
 		for(int i = 0 ; i < node1.GetMaxWeightIndex() ; i++)
 		{
-			node1.AddWeight(i, node1_mod[i]);
+			node1.AddWeight(i, node1_mod[i] * -MOD_RATIO);
 		}
 
 		for(int i = 0 ; i < node2.GetMaxWeightIndex() ; i++)
 		{
-			node2.AddWeight(i, node2_mod[i]);
+			node2.AddWeight(i, node2_mod[i] * -MOD_RATIO);
 		}
 
 		delete[] node1_mod;
 		delete[] node2_mod;
+
+		//return 1;
 
 //		if(image_index == 10)
 //		{
@@ -246,6 +261,7 @@ int main()
 
 		int result = MaxIndex(output);
 		result_list.push_back(result);
+
 	}
 
 	assert(result_list.size() == test_label_list.size());
@@ -253,6 +269,7 @@ int main()
 	int fail_count    = 0;
 	for(int i = 0 ; i < result_list.size() ; i++)
 	{
+//		printf("result = %d, test = %d,", result_list[i], test_label_list[i]);
 		if(result_list[i] == test_label_list[i])
 		{
 			success_count++;

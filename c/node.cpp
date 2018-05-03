@@ -25,6 +25,7 @@ void Node::PushWeightDiff(int index, double diff)
 	weight_diff_index = index;
 	weight_diff_temp  = GetWeight(index);
 
+	// printf("weight = %f\n", weight_diff_temp + diff);
 	SetWeight(index, weight_diff_temp + diff);
 }
 
@@ -62,6 +63,7 @@ double Node::GetWeight(int index)
 
 void Node::SetWeight(int index, double value)
 {
+	// printf("Set : %f\n", value);
 	if(index < inxout_size_)
 	{
 		int row_index = index / input_size_;
